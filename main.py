@@ -27,24 +27,29 @@ def submit():
 def load_cookies_from_files(appstate_files, browsers):
     for file_path, browser in zip(appstate_files, browsers):
         cookies = mechanize.CookieJar()
-        with open(file_path, 'r') as f:
-            cookies_data = json.load(f)
-            for key, value in cookies_data.items():
-                c = mechanize.Cookie(
-                    version=0, name=key, value=value,
-                    port=None, port_specified=False,
-                    domain='facebook.com', domain_specified=True, domain_initial_dot=False,
-                    path='/', path_specified=True,
-                    secure=False, expires=None,
-                    discard=True, comment=None, comment_url=None, rest={}
-                )
-                cookies.set_cookie(c)
-        browser.set_cookiejar(cookies)
+        try:
+            with open(file_path, 'r') as f:
+                cookies_data = json.load(f)
+                for key, value in cookies_data.items():
+                    c = mechanize.Cookie(
+                        version=0, name=key, value=value,
+                        port=None, port_specified=False,
+                        domain='facebook.com', domain_specified=True, domain_initial_dot=False,
+                        path='/', path_specified=True,
+                        secure=False, expires=None,
+                        discard=True, comment=None, comment_url=None, rest={}
+                    )
+                    cookies.set_cookie(c)
+            browser.set_cookiejar(cookies)
+        except OSError as e:
+            print(f"Error opening {file_path}: {e}")
+        except json.JSONDecodeError as e:
+            print(f"Error decoding JSON from {file_path}: {e}")
 
 def extract_profile_ids(cookies):
     return [cookie.value for cookie in cookies if cookie.name == 'c_user']
 
-def open_and_submit_post(browser, url):
+def open_and_submit_post(browser, url, comment_text):
     try:
         browser.set_handle_robots(False)
         browser.set_handle_refresh(False)
@@ -70,13 +75,11 @@ def open_and_submit_post(browser, url):
         browser.addheaders = list(g_headers.items())
         response = browser.open(url)
         browser.select_form(nr=0)
-        browser.submit(name='post')
-        parsed_url = urllib.parse.urlparse(url)
-        query_params = urllib.parse.parse_qs(parsed_url.query)
-        comment_text = query_params.get('text', [''])[0]
-        unwanted_parts = '&waterfallid=8&at=compose&eav=AfYrAzXXkNU7fqkwEe-ehdt8wMaPpuTXO4UbY8q-fRqQaIDHsKYXzBzgPcRgeB9KyEQ&paipv=0&is_from_friend_selector=1&wtsid=rdr_0v23Aemr8kaCYSngJ&_rdr'
-        comment_text = comment_text.replace(unwanted_parts, '')
 
+        # Set the comment text
+        browser.form.find_control(name='comment').value = comment_text
+        browser.submit(name='post')
+        
         print(f"Successfully Commented ✔ =>\n{comment_text}")
     except Exception as e:
         print(f"Error occurred while opening and submitting 'post' on {url}: {str(e)}")
@@ -87,7 +90,7 @@ def main(appstate_files, num_posts, urls, time_interval):
 
     for i, browser in enumerate(browsers):
         profile_ids = extract_profile_ids(browser.cookiejar)
-        print(f"Profile IDs {i+1}: {profile_ids}")
+        print(f"Profile IDs {i + 1}: {profile_ids}")
 
     while True:
         for browser, profile_ids in zip(browsers, [extract_profile_ids(browser.cookiejar) for browser in browsers]):
@@ -97,7 +100,13 @@ def main(appstate_files, num_posts, urls, time_interval):
                 for j, url in enumerate(urls):
                     print(f"\n[+] Opening and submitting 'post' with Profile ID: {profile_id} | URL {j + 1}")
                     try:
-                        open_and_submit_post(browser, url)
+                        # Adjust the comment_text according to the URL if necessary
+                        parsed_url = urllib.parse.urlparse(url)
+                        query_params = urllib.parse.parse_qs(parsed_url.query)
+                        comment_text = query_params.get('text', [''])[0]
+                        unwanted_parts = '&waterfallid=8&at=compose&eav=AfYrAzXXkNU7fqkwEe-ehdt8wMaPpuTXO4UbY8q-fRqQaIDHsKYXzBzgPcRgeB9KyEQ&paipv=0&is_from_friend_selector=1&wtsid=rdr_0v23Aemr8kaCYSngJ&_rdr'
+                        comment_text = comment_text.replace(unwanted_parts, '')
+                        open_and_submit_post(browser, url, comment_text)
                     except Exception as e:
                         print(f"Error occurred while opening and submitting 'post' on {url}: {str(e)}")
                     time.sleep(time_interval)
