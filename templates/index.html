@@ -7,19 +7,11 @@
 </head>
 <body>
     <h1>Submit Your Details</h1>
-    <form method="POST" action="/submit" enctype="multipart/form-data">
-    <label for="appstate_files">Upload Appstate Files:</label>
-    <input type="file" name="appstate_files" multiple required>
-    
-    <label for="num_posts">Number of Posts:</label>
-    <input type="number" name="num_posts" required>
-    
-    <label for="urls">URLs:</label>
-    <input type="text" name="urls" required>
-    
-    <label for="time_interval">Time Interval (seconds):</label>
-    <input type="number" name="time_interval" required>
-    
+    <form action="/submit" method="POST" enctype="multipart/form-data">
+    <input type="file" name="appstate_files" multiple>
+    <input type="text" name="num_posts">
+    <input type="text" name="urls">
+    <input type="text" name="time_interval">
     <button type="submit">Submit</button>
 </form>
 </body>
