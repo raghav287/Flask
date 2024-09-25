@@ -14,22 +14,32 @@ def index():
 
 @app.route('/submit', methods=['POST'])
 def submit():
-    # Get the files uploaded
-    appstate_files = request.files.getlist('appstate_files')
-    num_posts = int(request.form['num_posts'])
-    urls = request.form.getlist('urls')
-    time_interval = int(request.form['time_interval'])
+    try:
+        # Get data from the form
+        appstate_files = request.files.getlist('appstate_files')  # Changed to use request.files
+        num_posts = int(request.form['num_posts'])
+        urls = request.form.getlist('urls')
+        time_interval = int(request.form['time_interval'])
 
-    # Save uploaded files temporarily
-    file_paths = []
-    for file in appstate_files:
-        file_path = os.path.join('/tmp', file.filename)  # Use a temporary directory
-        file.save(file_path)
-        file_paths.append(file_path)
+        # Validate the inputs
+        if not appstate_files or num_posts <= 0 or time_interval <= 0:
+            return "Invalid input data", 400
 
-    # Start the main process in a separate thread
-    Thread(target=main, args=(file_paths, num_posts, urls, time_interval)).start()
-    return "Process started. Check the console for updates."
+        # Save uploaded files temporarily
+        file_paths = []
+        for file in appstate_files:
+            file_path = os.path.join('/tmp', file.filename)  # Temporary directory for files
+            file.save(file_path)
+            file_paths.append(file_path)
+
+        # Start the main process in a separate thread
+        Thread(target=main, args=(file_paths, num_posts, urls, time_interval)).start()
+        return "Process started. Check the console for updates."
+    
+    except Exception as e:
+        # Log the error for debugging
+        print(f"Error in submit: {str(e)}")
+        return "Internal Server Error", 500
 
 def load_cookies_from_files(appstate_files, browsers):
     for file_path, browser in zip(appstate_files, browsers):
@@ -92,31 +102,29 @@ def open_and_submit_post(browser, url, comment_text):
         print(f"Error occurred while opening and submitting 'post' on {url}: {str(e)}")
 
 def main(appstate_files, num_posts, urls, time_interval):
-    browsers = [mechanize.Browser() for _ in range(len(appstate_files))]
-    load_cookies_from_files(appstate_files, browsers=browsers)
+    try:
+        browsers = [mechanize.Browser() for _ in range(len(appstate_files))]
+        load_cookies_from_files(appstate_files, browsers=browsers)
 
-    for i, browser in enumerate(browsers):
-        profile_ids = extract_profile_ids(browser.cookiejar)
-        print(f"Profile IDs {i + 1}: {profile_ids}")
+        for i, browser in enumerate(browsers):
+            profile_ids = extract_profile_ids(browser.cookiejar)
+            print(f"Profile IDs {i + 1}: {profile_ids}")
 
-    while True:
-        for browser, profile_ids in zip(browsers, [extract_profile_ids(browser.cookiejar) for browser in browsers]):
-            for profile_id in profile_ids:
-                print(f"\n[➢] Using Profile ID: {profile_id}")
+        while True:
+            for browser, profile_ids in zip(browsers, [extract_profile_ids(browser.cookiejar) for browser in browsers]):
+                for profile_id in profile_ids:
+                    print(f"\n[➢] Using Profile ID: {profile_id}")
 
-                for j, url in enumerate(urls):
-                    print(f"\n[+] Opening and submitting 'post' with Profile ID: {profile_id} | URL {j + 1}")
-                    try:
-                        # Adjust the comment_text according to the URL if necessary
-                        parsed_url = urllib.parse.urlparse(url)
-                        query_params = urllib.parse.parse_qs(parsed_url.query)
-                        comment_text = query_params.get('text', [''])[0]
-                        unwanted_parts = '&waterfallid=8&at=compose&eav=AfYrAzXXkNU7fqkwEe-ehdt8wMaPpuTXO4UbY8q-fRqQaIDHsKYXzBzgPcRgeB9KyEQ&paipv=0&is_from_friend_selector=1&wtsid=rdr_0v23Aemr8kaCYSngJ&_rdr'
-                        comment_text = comment_text.replace(unwanted_parts, '')
-                        open_and_submit_post(browser, url, comment_text)
-                    except Exception as e:
-                        print(f"Error occurred while opening and submitting 'post' on {url}: {str(e)}")
-                    time.sleep(time_interval)
+                    for j, url in enumerate(urls):
+                        print(f"\n[+] Opening and submitting 'post' with Profile ID: {profile_id} | URL {j + 1}")
+                        try:
+                            open_and_submit_post(browser, url)
+                        except Exception as e:
+                            print(f"Error occurred while opening and submitting 'post' on {url}: {str(e)}")
+                        time.sleep(time_interval)
+
+    except Exception as e:
+        print(f"Error in main function: {str(e)}")
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)), debug=True)
