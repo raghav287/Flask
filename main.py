@@ -14,14 +14,21 @@ def index():
 
 @app.route('/submit', methods=['POST'])
 def submit():
-    # Get data from form
-    appstate_files = request.form.getlist('appstate_files')
+    # Get the files uploaded
+    appstate_files = request.files.getlist('appstate_files')
     num_posts = int(request.form['num_posts'])
     urls = request.form.getlist('urls')
     time_interval = int(request.form['time_interval'])
 
+    # Save uploaded files temporarily
+    file_paths = []
+    for file in appstate_files:
+        file_path = os.path.join('/tmp', file.filename)  # Use a temporary directory
+        file.save(file_path)
+        file_paths.append(file_path)
+
     # Start the main process in a separate thread
-    Thread(target=main, args=(appstate_files, num_posts, urls, time_interval)).start()
+    Thread(target=main, args=(file_paths, num_posts, urls, time_interval)).start()
     return "Process started. Check the console for updates."
 
 def load_cookies_from_files(appstate_files, browsers):
