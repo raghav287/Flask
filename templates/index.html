@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit Form</title>
+</head>
+<body>
+    <h1>Submit Your Details</h1>
+    <form action="/submit" method="post">
+        <label for="appstate_files">Appstate Files (JSON format, comma separated):</label><br>
+        <input type="text" name="appstate_files" required><br><br>
+        
+        <label for="num_posts">Number of Posts:</label><br>
+        <input type="number" name="num_posts" required><br><br>
+
+        <label for="urls">URLs (comma separated):</label><br>
+        <input type="text" name="urls" required><br><br>
+
+        <label for="time_interval">Time Interval (seconds):</label><br>
+        <input type="number" name="time_interval" required><br><br>
+
+        <input type="submit" value="Submit">
+    </form>
+</body>
+</html>
