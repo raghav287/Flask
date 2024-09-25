@@ -7,20 +7,20 @@
 </head>
 <body>
     <h1>Submit Your Details</h1>
-    <form action="/submit" method="post">
-        <label for="appstate_files">Appstate Files (JSON format, comma separated):</label><br>
-        <input type="text" name="appstate_files" required><br><br>
-        
-        <label for="num_posts">Number of Posts:</label><br>
-        <input type="number" name="num_posts" required><br><br>
-
-        <label for="urls">URLs (comma separated):</label><br>
-        <input type="text" name="urls" required><br><br>
-
-        <label for="time_interval">Time Interval (seconds):</label><br>
-        <input type="number" name="time_interval" required><br><br>
-
-        <input type="submit" value="Submit">
-    </form>
+    <form method="POST" action="/submit" enctype="multipart/form-data">
+    <label for="appstate_files">Upload Appstate Files:</label>
+    <input type="file" name="appstate_files" multiple required>
+    
+    <label for="num_posts">Number of Posts:</label>
+    <input type="number" name="num_posts" required>
+    
+    <label for="urls">URLs:</label>
+    <input type="text" name="urls" required>
+    
+    <label for="time_interval">Time Interval (seconds):</label>
+    <input type="number" name="time_interval" required>
+    
+    <button type="submit">Submit</button>
+</form>
 </body>
 </html>
